@@ -1,0 +1,31 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# AOSP's dhcpclient (device/generic/trusty), the rules of its own product's policy
+type dhcpclient, domain;
+type dhcpclient_exec, exec_type, vendor_file_type, file_type;
+
+init_daemon_domain(dhcpclient)
+net_domain(dhcpclient)
+allow dhcpclient net_bringup:fd use;
+
+set_prop(dhcpclient, vendor_net_wlan0_prop);
+allow dhcpclient self:capability { net_admin net_raw sys_module };
+allow dhcpclient self:netlink_route_socket { ioctl write nlmsg_write };
+allowxperm dhcpclient self:netlink_route_socket nlmsg { RTM_NEWADDR
+                                                        RTM_NEWROUTE };
+allow dhcpclient self:packet_socket { create bind write read };
+allowxperm dhcpclient self:netlink_route_socket ioctl { SIOCGIFFLAGS
+                                                        SIOCSIFFLAGS
+                                                        SIOCSIFMTU
+                                                        SIOCGIFINDEX
+                                                        SIOCGIFHWADDR };

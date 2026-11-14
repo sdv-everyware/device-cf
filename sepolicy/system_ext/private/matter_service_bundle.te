@@ -1,0 +1,25 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# The Matter service bundle: everything a service bundle may do (the SDV comm stack), plus the
+# network as AOSP gives it to a network client (net_domain): UDP sockets bound to Matter's port
+# and to mDNS's 5353 with the multicast groups joined, and the interface queries (netlink route,
+# the interface ioctls). The other bundles reach the network only through SDV's agents.
+# Why: bundles/matter/README.md.
+typeattribute matter_service_bundle coredomain;
+service_bundle_domain(matter_service_bundle)
+net_domain(matter_service_bundle)
+# tokio sizes its worker pool from the CPU quota of the process's cgroup.
+allow matter_service_bundle cgroup:file { getattr open read };
+# The Matter stack lists the IPv6 addresses of the interfaces for mDNS
+# (/proc/<pid>/net/if_inet6).
+allow matter_service_bundle proc_net:file { getattr open read };

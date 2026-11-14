@@ -1,0 +1,23 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# The screen link: client and server call each other (the command sink goes back to the client).
+binder_call(everyware_screen_client, everyware_screen_server)
+binder_call(everyware_screen_server, everyware_screen_client)
+
+allow everyware_screen_server everyware_screen_service:service_manager { add find };
+allow everyware_screen_client everyware_screen_service:service_manager find;
+neverallow { domain -everyware_screen_server } everyware_screen_service:service_manager add;
+
+# The client: the bundles' shared domain until the dashboard bundle has a domain of its own
+# (sdv-everyware/everyware#54). The panel checks the caller's SDV identity in any case.
+typeattribute untrusted_service_bundle everyware_screen_client;

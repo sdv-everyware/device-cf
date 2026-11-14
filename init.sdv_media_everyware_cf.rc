@@ -1,0 +1,56 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# The root init (androidboot.init_rc): init reads this file and nothing else, so every rc the
+# device needs is imported here by name. The RB3's list (device/rb3/sdv_media_db845c) with
+# Google's Cuttlefish files in place of the board's (device/google/sdv/sdv_core_cf,
+# sdv_media_cf); not Google's Ethernet mesh, the someip and OEM update samples, MACsec.
+
+import /system/etc/init/init.sdv_core_base.rc
+# DICE from a test file; after the core base, whose service it overrides
+import /system_ext/etc/init/init_open_dice_from_file_service.rc
+# the trust store of instance1 from its preprovisioned image (the launch configuration)
+import /system_ext/etc/init/vvmtruststore.rc
+import /product/etc/init/vvmtruststore.preprovisioned.rc
+# EGL and Vulkan of Cuttlefish without SurfaceFlinger: ANGLE on gfxstream, minigbm
+import /system/etc/init/init.sdv_media_base.rc
+# the kernel log and logcat on the virtual serial console (sdv_cf)
+import /vendor/etc/init/seriallogging.rc
+# adb remount on a userdebug build: remount waits for gsid, and the scratch files are cleaned
+# after a boot
+import /system/etc/init/gsid.rc
+import /system/etc/init/clean_scratch_files.rc
+import /product/etc/init/dnsproxyd.rc
+import /product/etc/init/chronyd.rc
+
+import /vendor/etc/init/android.sdv.hardware.security.keymint-service.nonsecure.rc
+
+import /vendor/etc/init/init.everyware_cf.rc
+
+# as Google's init.sdv_cf.rc, without its Ethernet mesh
+on post-fs && property:ro.sdv.enable_seriallogging=true
+    start seriallogging
+
+# The network namespaces the SDV agents enter, with loopback only (one device, no mesh);
+# without them the agents never start and the others loop on servicemanager.
+service sdv-sd-mesh-local /product/bin/ethernet/ethernet_sd_mesh_local.sh
+    class core
+    user root
+    group shell
+    stdio_to_kmsg
+    disabled
+    oneshot
+
+# on the agents' own trigger (parsed before sdv.agents.rc, so it runs first): at post-fs the
+# bind mount would stay in the bootstrap mount namespace
+on property:ro.sdv.orchestrator.state.ready=true
+    exec_start sdv-sd-mesh-local
