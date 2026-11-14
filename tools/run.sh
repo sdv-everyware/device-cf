@@ -54,6 +54,13 @@ start)
         --guest_enforce_security="${CF_ENFORCE:-false}"
         # nothing leaves the host
         --report_anonymous_usage_stats=n
+        # The streamer writes each display's frames into a shm ring
+        # (/dev/shm/cf_shmem_display_*) that a host viewer reads directly (cfview),
+        # but it keeps the rings only when a display has overlays
+        # (frontend/webrtc/main.cpp, OverlaysEnabled). "0:0" lays the display over
+        # itself: the picture does not change, one blend per new frame. To be
+        # replaced by a viewer that takes crosvm's frames itself.
+        --display0=width=1920,height=1080,overlays=0:0
     )
     [ -n "${CF_GPU_MODE:-}" ] && args+=(--gpu_mode="$CF_GPU_MODE")
     cvd -group_name "$GROUP" create "${args[@]}"
