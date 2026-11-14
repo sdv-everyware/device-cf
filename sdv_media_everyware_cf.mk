@@ -126,6 +126,11 @@ $(call inherit-product, vendor/sdv-everyware/third_party/chrony/chrony.mk)
 # stays off (EVERYWARE_EXPERIMENTAL_BROWSER): this product has no policy for it.
 $(call inherit-product, vendor/sdv-everyware/everyware/product/everyware.mk)
 
+# virtio-gpu has no plane a zone can go under (no zpos): the panel's init script passes
+# --zone-plane for every board, this turns it off, and the dashboard draws the zones, only on a
+# client's new frame (smarthome-app README, Options)
+PRODUCT_VENDOR_PROPERTIES += ro.vendor.everyware.zone_plane=false
+
 # the domains of the bundles that do more than the default one: the Wi-Fi bundle talks to the
 # supplicant's control socket, the Matter bundle has UDP and multicast, the System bundle sets
 # the time zone; the supplicant's side of the socket is in sepolicy/vendor

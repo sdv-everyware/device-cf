@@ -138,18 +138,20 @@ the device, as on the RB3.
 | Bundles | weather, news, Wi-Fi, Matter, system, dashboard and `user_preferences` running, each in its SELinux domain |
 | Wi-Fi | `setup_wifi` makes `wlan0`, the supplicant joins `VirtWifi`, the Wi-Fi bundle reports it (`WIFI_CONNECTED "VirtWifi" 4 bars`), the panel's Wi-Fi sheet lists it |
 | DHCP | no lease on this host: its firewall drops DHCP on `cvd-wbr` (see Network); with the lease set by hand, dnsproxyd resolves, chronyd syncs (stratum 1), weather and news arrive over HTTPS |
-| Panel | crashes at start (below); started by hand without `--zone-plane` it draws the dashboard with the bundles' data, 27 fps, 7 ms per frame |
+| Panel | with harry's fix for a plane without zpos (below) it starts with the APEX's `--zone-plane`; `ro.vendor.everyware.zone_plane=false` turns zone planes off; idle, it draws 1 frame a second (the clock) |
 | Touch | a click in the WebRTC page goes through crosvm's virtio multi-touch to the panel: tabs and the Wi-Fi sheet open |
-| Resources | the guest uses 1 of its 2 GB; on the host crosvm takes about 1.5 cores while the panel draws (SwiftShader) |
+| Resources | the guest uses 1 of its 2 GB; on the host crosvm takes about a quarter of a core with an idle panel (it took ~5 cores while the panel redrew 30 times a second without the property) |
 | Enforcing (`CF_ENFORCE=true`) | boots, but the orchestrator never gets ready, 2 of 7 bundles start, the panel and the mesh script are denied |
 
 What does not work yet, and where the change belongs:
 
-1. The panel's init script passes `--zone-plane`; harry then sets the primary plane's `zpos`
+1. The panel's init script passes `--zone-plane`; harry then set the primary plane's `zpos`
    (`packages/services/display_safety/framework/graphics/har-gl-context/src/direct_rendering/kms.rs`,
-   `plane_props["zpos"]`), and virtio-gpu's planes have no `zpos`: the lookup panics ("no entry
-   found for key") and init restarts the panel in a loop. The fix is in harry: set `zpos` only
-   when the plane has it, with a warning otherwise.
+   `plane_props["zpos"]`), and virtio-gpu's planes have no `zpos`: the lookup panicked and init
+   restarted the panel in a loop. Fixed on branches, not landed yet: harry sets `zpos` only when
+   the plane has it (super-harry `feature/zpos-optional`), and the panel reads
+   `ro.vendor.everyware.zone_plane` (smarthome-app `feature/board-zone-plane`). Until they land,
+   an image built from main still has the crash.
 2. DHCP on this host: a firewall setting of the host, not of the image.
 3. Enforcing: the policy of the panel, of the bundles' name lookups and of the mesh script is
    not written yet (the same holds for the RB3, which runs permissive).
