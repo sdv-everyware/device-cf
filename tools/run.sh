@@ -63,6 +63,16 @@ start)
         --display0=width=1920,height=1080,overlays=0:0
     )
     [ -n "${CF_GPU_MODE:-}" ] && args+=(--gpu_mode="$CF_GPU_MODE")
+    # CF_STATIC_WIFI=1: the Wi-Fi address on the kernel command line instead of DHCP, for a host
+    # whose firewall drops DHCP on the bridge (net/net_bringup.sh, net/wlan_static.cpp). As
+    # Cuttlefish does for its mobile network: the host takes the bridge's network and gives the
+    # instance 100 + its number in it, the gateway is the bridge, DNS as the host's dnsmasq.
+    if [ "${CF_STATIC_WIFI:-0}" = 1 ]; then
+        bridge=$(ip -4 -o addr show cvd-wbr 2>/dev/null | awk '{print $4}' | head -1)
+        [ -n "$bridge" ] || { echo "CF_STATIC_WIFI: no IPv4 address on cvd-wbr"; exit 1; }
+        gw=${bridge%/*}
+        args+=(--extra_kernel_cmdline="everyware.wlan0=${gw%.*}.$((100 + INSTANCE))/${bridge#*/},$gw,${CF_DNS:-8.8.8.8,8.8.4.4}")
+    fi
     cvd -group_name "$GROUP" create "${args[@]}"
     echo "adb -s $SERIAL"
     ;;

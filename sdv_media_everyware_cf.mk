@@ -93,6 +93,9 @@ PRODUCT_COPY_FILES += \
 # network without the framework: AOSP's dhcpclient (Trusty's, in a Soong namespace) and the script
 PRODUCT_SOONG_NAMESPACES += device/generic/trusty
 PRODUCT_PACKAGES += dhcpclient
+# the address from the host instead, where the host's firewall drops DHCP (net/wlan_static.cpp)
+PRODUCT_SOONG_NAMESPACES += device/cf-everyware/sdv_media_everyware_cf/net
+PRODUCT_PACKAGES += wlan_static
 PRODUCT_COPY_FILES += \
     device/cf-everyware/sdv_media_everyware_cf/net/net_bringup.sh:$(TARGET_COPY_OUT_VENDOR)/bin/net_bringup.sh
 

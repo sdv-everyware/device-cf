@@ -105,6 +105,13 @@ The host must answer DHCP on `cvd-wbr`. With firewalld, a bridge in no zone fall
 default zone `public`, which does not let DHCP in: the guest associates with `VirtWifi` but gets
 no lease. Then the bridges need a zone that allows the `dhcp` service (root, on the host).
 
+Where the host's firewall cannot be changed, `CF_STATIC_WIFI=1 tools/run.sh start` gives the
+address from the host instead, as Cuttlefish does for its mobile network: run.sh takes the
+network of `cvd-wbr` and puts `everyware.wlan0=<address>/<prefix>,<gateway>,<dns>...` on the
+kernel command line (address 100 + the instance number, the bridge as gateway, DNS as the
+host's dnsmasq hands out). net_bringup.sh then runs `wlan_static` instead of dhcpclient on
+connect; it sets the address and the default route and publishes the same `vendor.net.wlan0.*`.
+
 On the RB3 the config holds the house's network and is written by the user; here the only
 network is the VM's own open one, so the script writes it. The Wi-Fi bundle sees `VirtWifi` in
 its scan and can join it again.

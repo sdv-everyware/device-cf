@@ -18,8 +18,17 @@
 # dhcpclient run as children of this script (init kills the process group when the main process
 # exits); dhcpclient sets address, route and MTU and publishes the gateway and the DNS servers as
 # vendor.net.wlan0.*, which dnsproxyd and chronyd read.
+#
+# everyware.wlan0=<address>/<prefix>,<gateway>,<dns>[,<dns>...] on the kernel command line
+# (tools/run.sh, CF_STATIC_WIFI=1): the host chose the address, for a host whose firewall drops
+# DHCP on the bridge; wlan_static sets it and publishes the same properties, no dhcpclient.
 
 log() { /vendor/bin/log -t net_bringup "$*"; }
+
+static=
+for word in $(cat /proc/cmdline); do
+    case "$word" in everyware.wlan0=*) static=${word#everyware.wlan0=} ;; esac
+done
 
 sockets=/data/vendor/wifi/wpa/sockets
 
@@ -46,10 +55,17 @@ wifi_watchdog() {
             *wpa_state=COMPLETED*)
                 if [ $connected = no ]; then
                     connected=yes
-                    [ -n "$dhcp" ] && kill $dhcp 2>/dev/null
-                    /vendor/bin/dhcpclient -i wlan0 &
-                    dhcp=$!
-                    log "wlan0 connected, dhcpclient started"
+                    if [ -n "$static" ]; then
+                        # shellcheck disable=SC2086 -- the values are split on purpose
+                        /vendor/bin/wlan_static wlan0 $(echo "$static" | sed 's/,/ /g') &&
+                            log "wlan0 connected, address from the host: $static" ||
+                            log "wlan0 connected, wlan_static failed"
+                    else
+                        [ -n "$dhcp" ] && kill $dhcp 2>/dev/null
+                        /vendor/bin/dhcpclient -i wlan0 &
+                        dhcp=$!
+                        log "wlan0 connected, dhcpclient started"
+                    fi
                 fi
                 sleep 1 ;;
             *wpa_state=SCANNING*|*wpa_state=*ASSOCIATING*|*wpa_state=AUTHENTICATING*|*HANDSHAKE*)
