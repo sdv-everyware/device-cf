@@ -23,12 +23,11 @@ SDV_RPC_INTERFACE := lo
 
 include device/google/sdv/sdv_media_cf/BoardConfig.mk
 
-# The browser (experimental, EVERYWARE_EXPERIMENTAL_BROWSER): this instance makes the amd64 image
-# of its Debian root (everyware's scripts/browser-root.sh --export), which needs about 2.5 GB in
-# /data for the root and its tar; SDV media gives /data 512 MiB.
-ifeq ($(EVERYWARE_EXPERIMENTAL_BROWSER),true)
+# This instance makes the amd64 image of the browser's Debian root (everyware's
+# scripts/browser-root.sh --export), which needs about 2.5 GB in /data for the root and its tar;
+# SDV media gives /data 512 MiB. Also without the browser: an image with it is built only once
+# that image exists.
 BOARD_USERDATAIMAGE_PARTITION_SIZE := 4294967296 # 4 GiB
-endif
 
 # Wi-Fi: virt_wifi, a station on top of the Wi-Fi tap, and what it needs
 BOARD_VENDOR_RAMDISK_KERNEL_MODULES += \
