@@ -131,7 +131,8 @@ the device, as on the RB3.
 | SELinux mode | `androidboot.selinux` in the image | the launch flag |
 | Clock at boot | no RTC battery: chronyd restores the last time | the host's time |
 | Kernel modules | Linaro's: disk and display in the first stage, the rest in the background | Google's virtual-device modules, all in the first stage |
-| Not here | | the Qualcomm remote processors, Bluetooth, the audio HAL, the browser |
+| Browser (experimental) | the root's image for arm64, Mesa freedreno in the root | the root's image for amd64, made on this instance (`browser-root.sh --export`); Debian's Mesa has no gfxstream, so pages render on the CPU (llvmpipe) |
+| Not here | | the Qualcomm remote processors, Bluetooth, the audio HAL |
 
 ## State
 
