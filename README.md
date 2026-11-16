@@ -54,7 +54,8 @@ directory is a symlink to that disk. A full build takes about 60 GB. On a Cuttle
 ## Run
 
 Needs the host packages `cuttlefish-base` and `cuttlefish-user` (the `cvd` command, the host's
-bridges and taps), and the user in the groups `kvm`, `cvdnetwork` and `render`.
+bridges and taps), and the user in the groups `kvm`, `cvdnetwork` and `render`. With firewalld on
+the host, `tools/host-network.sh` once (Network, below).
 
 ```
 device/cf-everyware/sdv_media_everyware_cf/tools/run.sh start
@@ -101,16 +102,27 @@ dnsproxyd:  resolves with vendor.net.wlan0.dns*
 chronyd:    refreshes its servers when dns1 is set
 ```
 
-The host must answer DHCP on `cvd-wbr`. With firewalld, a bridge in no zone falls into the
-default zone `public`, which does not let DHCP in: the guest associates with `VirtWifi` but gets
-no lease. Then the bridges need a zone that allows the `dhcp` service (root, on the host).
+The instance takes its Wi-Fi address from the host, not by DHCP: run.sh takes the network of
+`cvd-wbr` and puts `everyware.wlan0=<address>/<prefix>,<gateway>,<dns>...` on the kernel command
+line (address 100 + the instance number, the bridge as gateway), as Cuttlefish does for its
+mobile network. net_bringup.sh then runs `wlan_static` instead of dhcpclient on connect; it sets
+the address and the default route and publishes the same `vendor.net.wlan0.*`.
+`CF_STATIC_WIFI=0 tools/run.sh start` asks the host's DHCP instead.
 
-Where the host's firewall cannot be changed, `CF_STATIC_WIFI=1 tools/run.sh start` gives the
-address from the host instead, as Cuttlefish does for its mobile network: run.sh takes the
-network of `cvd-wbr` and puts `everyware.wlan0=<address>/<prefix>,<gateway>,<dns>...` on the
-kernel command line (address 100 + the instance number, the bridge as gateway, DNS as the
-host's dnsmasq hands out). net_bringup.sh then runs `wlan_static` instead of dhcpclient on
-connect; it sets the address and the default route and publishes the same `vendor.net.wlan0.*`.
+The instance's traffic leaves through the host: NAT on `cvd-wbr` (Cuttlefish's host service),
+then the host's default route. A host firewall can stand in between. firewalld puts a bridge of
+no zone into its default zone, which takes no DHCP and forwards nothing into another zone. While
+a VPN's tunnel holds the default route (it is in a zone of its own), the instance has an address
+but no internet. Once, as root, on such a host:
+
+```
+sudo device/cf-everyware/sdv_media_everyware_cf/tools/host-network.sh          # --undo to remove
+```
+
+It gives `cvd-wbr` and `cvd-ebr` a zone `cuttlefish` that takes DHCP and DNS, and a policy that
+forwards from it to every zone. `run.sh start` says before the start when the bridge has no such
+zone, and after the boot whether the instance reaches the internet (a TCP connection to the
+weather bundle's server by name: address, DNS and forwarding in one).
 
 On the RB3 the config holds the house's network and is written by the user; here the only
 network is the VM's own open one, so the script writes it. The Wi-Fi bundle sees `VirtWifi` in
