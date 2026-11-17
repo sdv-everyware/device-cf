@@ -38,6 +38,9 @@ import /vendor/etc/init/init.everyware_cf.rc
 # the panel's browser (vendor/sdv-everyware/everyware/product/everyware_browser.rc): experimental,
 # installed only with EVERYWARE_EXPERIMENTAL_BROWSER=true; init skips a missing import
 import /vendor/etc/init/everyware_browser.rc
+# the panel's other processes, one service each, started when the panel runs: the camera
+# (camera-app's product/camera.mk). A directory: init reads every file in it.
+import /vendor/etc/init/everyware
 
 # as Google's init.sdv_cf.rc, without its Ethernet mesh
 on post-fs && property:ro.sdv.enable_seriallogging=true

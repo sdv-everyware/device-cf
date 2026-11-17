@@ -134,6 +134,12 @@ $(call inherit-product, vendor/sdv-everyware/everyware/product/everyware.mk)
 # client's new frame (smarthome-app README, Options)
 PRODUCT_VENDOR_PROPERTIES += ro.vendor.everyware.zone_plane=false
 
+# the panel's camera (packages/services/display_safety/utils/camera-app): camera_app, its clip and
+# its service, started when the panel runs (the root init imports /vendor/etc/init/everyware), in
+# its domain everyware_camera (sepolicy/vendor). The emulator has no camera, so the tile shows the
+# clip. A checkout without the camera-app repository has no camera.
+$(call inherit-product-if-exists, packages/services/display_safety/utils/camera-app/product/camera.mk)
+
 # the domains of the bundles that do more than the default one: the Wi-Fi bundle talks to the
 # supplicant's control socket, the Matter bundle has UDP and multicast, the System bundle sets
 # the time zone; the supplicant's side of the socket is in sepolicy/vendor

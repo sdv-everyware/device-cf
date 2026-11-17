@@ -13,3 +13,9 @@
 # The panel (HAR's UI process domain) serves the screen link to the dashboard bundle
 # (smarthome-app src/screen_binder.rs).
 typeattribute vendor_harplatform everyware_screen_server;
+
+# The panel's camera (everyware_camera.te): the panel shows its zones, the buffers and fences it
+# hands over the panel's Wayland socket, and tells it live or still on the camera's socket.
+allow vendor_harplatform everyware_camera:fd use;
+allow vendor_harplatform everyware_camera_socket:sock_file write;
+allow vendor_harplatform everyware_camera:unix_stream_socket connectto;
