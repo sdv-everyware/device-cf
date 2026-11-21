@@ -17,3 +17,6 @@
 /vendor/bin/everyware-browser\.sh u:object_r:everyware_browser_exec:s0
 # the panel's camera (everyware_camera.te)
 /vendor/bin/camera_app           u:object_r:everyware_camera_exec:s0
+# the panel's game (everyware_game.te)
+/vendor/bin/doom_app             u:object_r:everyware_game_exec:s0
+/data/vendor/everyware/doom(/.*)? u:object_r:everyware_game_data_file:s0

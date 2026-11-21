@@ -140,6 +140,13 @@ PRODUCT_VENDOR_PROPERTIES += ro.vendor.everyware.zone_plane=false
 # clip. A checkout without the camera-app repository has no camera.
 $(call inherit-product-if-exists, packages/services/display_safety/utils/camera-app/product/camera.mk)
 
+# the panel's game (DOOM, packages/services/display_safety/utils/doom-app): experimental and off
+# unless EVERYWARE_GAME=true; then doom_app, Freedoom's WAD (fetched before the build), its
+# service (started when the panel runs, in its domain everyware_game) and the property by which
+# the panel shows its game button. A checkout without the doom-app repository has no game,
+# whatever the flag says.
+$(call inherit-product-if-exists, packages/services/display_safety/utils/doom-app/product/doom.mk)
+
 # the domains of the bundles that do more than the default one: the Wi-Fi bundle talks to the
 # supplicant's control socket, the Matter bundle has UDP and multicast, the System bundle sets
 # the time zone; the supplicant's side of the socket is in sepolicy/vendor
