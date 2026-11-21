@@ -15,10 +15,11 @@
 # sdv_media_everyware_cf: plan and decisions
 
 Goal: on Cuttlefish the same system as on the RB3 (`device/rb3/sdv_media_db845c`): SDV core
-without the Java framework, the house's service bundles (weather, news, Wi-Fi, Matter, system,
-dashboard), the panel from its vendor APEX (`com.everyware.smarthome`) with Wayland zones and
-touch, Wi-Fi with DHCP, names (dnsproxyd), time (chrony), settings in `user_preferences`. One
-image that a laptop runs without a board, for development and for continuous builds.
+without the Java framework, the house's service bundles (weather, news, calendar, Wi-Fi, Matter,
+system, dashboard), the panel from its vendor APEX (`com.everyware.smarthome`) with Wayland zones,
+its child processes (`camera-app`, optional `doom-app` and browser) and touch, Wi-Fi with DHCP,
+names (dnsproxyd), time (chrony), settings in `user_preferences`. One image that a laptop runs
+without a board, for development and for continuous builds.
 
 ## The reference: how Google runs SDV on Cuttlefish
 
@@ -48,7 +49,7 @@ image that a laptop runs without a board, for development and for continuous bui
 | C10 | Out directory | `cuttlefish_out`, a symlink to the second disk (`CF_OUT_DISK`) | in the tree on the 4 TB disk | a full out directory is 70 to 130 GB here; the tree's disk had 46 GB free |
 | C11 | Host tools | built from this tree (`m` builds `hosttar` on a `vsoc_x86_64` board), started by the installed `cvd` | the host package of the installed `cuttlefish-base` | guest and host gfxstream from one tree; `cvd` 1.53 keeps the tree's `run_cvd`, `assemble_cvd`, crosvm and gfxstream and runs its own copies of the helper tools (WebRTC, input, the adb proxy) |
 | C12 | Instance | group `everyware`, instance 7 (`CF_INSTANCE`) | the next free number | other instances keep their numbers, ports and taps (the three-VM demo uses 1 to 3); `tools/run.sh stop` stops this group only |
-| C13 | Browser | off, no policy for it | the RB3's `everyware_browser` policy | experimental (known security issues); the flag `EVERYWARE_EXPERIMENTAL_BROWSER` is off by default |
+| C13 | Browser | off by default (`EVERYWARE_BROWSER=true` enables it), permissive `everyware_browser` policy and 4 GiB `/data` when on | always in the image | experimental (known security issues); matches `device-rb3` (`init.sdv_media_everyware_cf.browser.rc`) |
 | C14 | Not taken from the RB3 | Linaro's board files, the Qualcomm remote processors, the Bluetooth HAL, the AIDL audio HAL, Mesa freedreno | | the board's hardware; Cuttlefish has no Bluetooth without netsim, and nothing here plays audio through the HAL |
 | C15 | adb | over vsock only: `service.adb.listen_addrs=vsock:5555`, as Cuttlefish's own devices (`device/google/cuttlefish/shared/device.mk`) | Google's SDV targets, which leave it unset | adbd finds no USB gadget and then listens on TCP 5555 of every interface: `wlan0` is on the host's bridge, and a userdebug adbd asks for no key; the host's adb proxy uses vsock anyway |
 | C16 | Vendor shell | `sh_vendor` and `toybox_vendor`, as on the RB3 | `/system/bin/sh` in the script | the vendor script runs from `/vendor`; Google's SDV vendor partition has no shell, and init fails the service with "No such file or directory" |
@@ -62,12 +63,12 @@ image that a laptop runs without a board, for development and for continuous bui
 | Graphics | `device/google/sdv/sdv_media_base` |
 | `wlan0` | `device/google/cuttlefish/guest/commands/setup_wifi` and the virtual-device modules `cfg80211`, `virt_wifi` (with GKI's `rfkill`) |
 | House's bundles, dnsproxyd, chrony | `vendor/sdv-everyware`, inherited as on the RB3 |
-| The panel | `com.everyware.smarthome` from `packages/services/display_safety/utils/smarthome-app` |
-| Copied from `device/rb3/sdv_media_db845c` | `sepolicy/system_ext/*` (same), `sepolicy/vendor/*.te` and `property_contexts` (same, without the KeyMint and the browser), `vintf/`, `ethernet/`, `net/net_bringup.sh` (with `setup_wifi` and the default config, without the modem), the root init (Cuttlefish's imports) |
-| New | `BoardConfig.mk`, `android-info.txt`, `init.everyware_cf.rc`, `tools/` |
-| Changed elsewhere | `vendor/sdv-everyware/third_party/rust` (branch feature/cuttlefish): chacha20 gets `cpufeatures` on Android x86 too (`patches/0004`); the generator reads the device's dependencies for aarch64 only |
+| The panel and its child processes | `com.everyware.smarthome` from `smarthome-app`, `camera-app` (`product/camera.mk`), optional `doom-app` (`product/doom.mk`) |
+| Copied and adapted from `device/rb3/sdv_media_db845c` | `sepolicy/system_ext/*` (same), `sepolicy/vendor/*.te` and `property_contexts` (without KeyMint and dragonboard-specific types), `vintf/`, `ethernet/`, `net/net_bringup.sh` (with `setup_wifi`, `wlan_static` and the default config, without the modem), the root init (Cuttlefish's imports) |
+| New | `BoardConfig.mk`, `android-info.txt`, `init.everyware_cf.rc`, `net/wlan_static.cpp`, `tools/` |
 
 ## State
 
-See README.md, "State": built and run on 2026-11-14; what is left is the panel's `zpos` on
-virtio-gpu (a fix in harry), DHCP through the host's firewall, and the policy for enforcing.
+See README.md, "State": builds and runs cleanly from `main` with live bundles, display and touch;
+what remains open is SELinux enforcing policy (shared with the RB3) and host firewall DHCP rules
+(worked around with `CF_STATIC_WIFI=1`).
