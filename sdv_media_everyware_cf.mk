@@ -99,10 +99,6 @@ PRODUCT_PACKAGES += wlan_static
 PRODUCT_COPY_FILES += \
     device/cf-everyware/sdv_media_everyware_cf/net/net_bringup.sh:$(TARGET_COPY_OUT_VENDOR)/bin/net_bringup.sh
 
-# the root init (androidboot.init_rc in BoardConfig.mk): init reads this file and its imports only
-PRODUCT_COPY_FILES += \
-    device/cf-everyware/sdv_media_everyware_cf/init.sdv_media_everyware_cf.rc:$(TARGET_COPY_OUT_SYSTEM)/etc/init/hw/init.sdv_media_everyware_cf.rc
-
 # SDV on one device: the sample policies, the test identity, service discovery on loopback
 include device/google/sdv/sdv_core_base/sepolicy/samples/device_sepolicy.mk
 
@@ -124,10 +120,21 @@ $(call inherit-product, vendor/sdv-everyware/dnsproxyd/dnsproxyd.mk)
 # the clock over NTP, restored from the last run at boot
 $(call inherit-product, vendor/sdv-everyware/third_party/chrony/chrony.mk)
 
-# the service bundles of the house (weather, news, Wi-Fi, Matter, system, the dashboard bridge),
-# one APEX each, and the contexts that put them into their SELinux domains. The panel's browser
-# stays off (EVERYWARE_EXPERIMENTAL_BROWSER): this product has no policy for it.
+# the service bundles of the house (weather, news, calendar, Wi-Fi, Matter, system, the dashboard
+# bridge), one APEX each, and the contexts that put them into their SELinux domains
 $(call inherit-product, vendor/sdv-everyware/everyware/product/everyware.mk)
+
+# the root init (androidboot.init_rc in BoardConfig.mk): init reads this file and its imports
+# only. With the panel's experimental browser (EVERYWARE_BROWSER=true, everyware.mk above) a
+# root init of two lines takes its path: it imports the board's init and the browser's service.
+ifeq ($(EVERYWARE_BROWSER),true)
+PRODUCT_COPY_FILES += \
+    device/cf-everyware/sdv_media_everyware_cf/init.sdv_media_everyware_cf.rc:$(TARGET_COPY_OUT_SYSTEM)/etc/init/hw/init.sdv_media_everyware_cf.board.rc \
+    device/cf-everyware/sdv_media_everyware_cf/init.sdv_media_everyware_cf.browser.rc:$(TARGET_COPY_OUT_SYSTEM)/etc/init/hw/init.sdv_media_everyware_cf.rc
+else
+PRODUCT_COPY_FILES += \
+    device/cf-everyware/sdv_media_everyware_cf/init.sdv_media_everyware_cf.rc:$(TARGET_COPY_OUT_SYSTEM)/etc/init/hw/init.sdv_media_everyware_cf.rc
+endif
 
 # virtio-gpu has no plane a zone can go under (no zpos): the panel's init script passes
 # --zone-plane for every board, this turns it off, and the dashboard draws the zones, only on a
