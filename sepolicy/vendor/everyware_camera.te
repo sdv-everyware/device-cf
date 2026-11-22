@@ -11,7 +11,9 @@
 # limitations under the License.
 
 # camera-app (packages/services/display_safety/utils/camera-app): the camera in the panel's
-# camera tile and full view. A harry zone client started by init after the panel
+# camera tile and full view. The emulator has no camera: the app shows its clip (camera-app
+# README, "The clip"); a USB camera passed into the VM would be shown instead. A harry zone
+# client started by init after the panel
 # (/vendor/etc/init/everyware/everyware_camera.rc): the camera, the GPU's render node, the panel's
 # Wayland socket and its own control socket in the panel's runtime directory; no network.
 type everyware_camera, domain;
@@ -27,7 +29,7 @@ allow everyware_camera sysfs:dir r_dir_perms;
 allow everyware_camera sysfs:lnk_file r_file_perms;
 allow everyware_camera sysfs:file r_file_perms;
 
-# its design (/vendor/etc/camera-app/camera.dcf)
+# its design and its clip (/vendor/etc/camera-app)
 allow everyware_camera vendor_configs_file:dir r_dir_perms;
 allow everyware_camera vendor_configs_file:file r_file_perms;
 
@@ -64,3 +66,8 @@ allow everyware_camera self:capability sys_nice;
 dontaudit everyware_camera default_prop:file r_file_perms;
 dontaudit everyware_camera zygote_config_prop:file r_file_perms;
 dontaudit everyware_camera system_file:file getattr;
+# asked for at start by the tracing library (perfetto's daemon) and the graphics stack (the GPU
+# statistics service), not needed by the camera
+dontaudit everyware_camera traced_producer_socket:sock_file write;
+dontaudit everyware_camera traced:unix_stream_socket connectto;
+dontaudit everyware_camera gpu_service:service_manager find;
