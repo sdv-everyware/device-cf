@@ -17,7 +17,7 @@
 Goal: on Cuttlefish the same system as on the RB3 (`device/rb3/sdv_media_db845c`): SDV core
 without the Java framework, the house's service bundles (weather, news, calendar, Wi-Fi, Matter,
 system, dashboard), the panel from its vendor APEX (`com.everyware.smarthome`) with Wayland zones,
-its child processes (`camera-app`, optional `doom-app` and browser) and touch, Wi-Fi with DHCP,
+its child processes (`camera-app`, optional `doom-app` and the experimental browser) and touch, Wi-Fi with DHCP,
 names (dnsproxyd), time (chrony), settings in `user_preferences`. One image that a laptop runs
 without a board, for development and for continuous builds.
 
@@ -49,7 +49,7 @@ without a board, for development and for continuous builds.
 | C10 | Out directory | `cuttlefish_out`, a symlink to the second disk (`CF_OUT_DISK`) | in the tree on the 4 TB disk | a full out directory is 70 to 130 GB here; the tree's disk had 46 GB free |
 | C11 | Host tools | built from this tree (`m` builds `hosttar` on a `vsoc_x86_64` board), started by the installed `cvd` | the host package of the installed `cuttlefish-base` | guest and host gfxstream from one tree; `cvd` 1.53 keeps the tree's `run_cvd`, `assemble_cvd`, crosvm and gfxstream and runs its own copies of the helper tools (WebRTC, input, the adb proxy) |
 | C12 | Instance | group `everyware`, instance 7 (`CF_INSTANCE`) | the next free number | other instances keep their numbers, ports and taps (the three-VM demo uses 1 to 3); `tools/run.sh stop` stops this group only |
-| C13 | Browser | off by default (`EVERYWARE_BROWSER=true` enables it), permissive `everyware_browser` policy and 4 GiB `/data` when on | always in the image | experimental (known security issues); matches `device-rb3` (`init.sdv_media_everyware_cf.browser.rc`) |
+| C13 | Browser | off by default (`EVERYWARE_EXPERIMENTAL_BROWSER=true` enables it), permissive `everyware_browser` policy and 4 GiB `/data` when on | always in the image | experimental (known security issues); matches `device-rb3` (`init.sdv_media_everyware_cf.browser.rc`) |
 | C14 | Not taken from the RB3 | Linaro's board files, the Qualcomm remote processors, the Bluetooth HAL, the AIDL audio HAL, Mesa freedreno | | the board's hardware; Cuttlefish has no Bluetooth without netsim, and nothing here plays audio through the HAL |
 | C15 | adb | over vsock only: `service.adb.listen_addrs=vsock:5555`, as Cuttlefish's own devices (`device/google/cuttlefish/shared/device.mk`) | Google's SDV targets, which leave it unset | adbd finds no USB gadget and then listens on TCP 5555 of every interface: `wlan0` is on the host's bridge, and a userdebug adbd asks for no key; the host's adb proxy uses vsock anyway |
 | C16 | Vendor shell | `sh_vendor` and `toybox_vendor`, as on the RB3 | `/system/bin/sh` in the script | the vendor script runs from `/vendor`; Google's SDV vendor partition has no shell, and init fails the service with "No such file or directory" |

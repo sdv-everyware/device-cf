@@ -125,9 +125,9 @@ $(call inherit-product, vendor/sdv-everyware/third_party/chrony/chrony.mk)
 $(call inherit-product, vendor/sdv-everyware/everyware/product/everyware.mk)
 
 # the root init (androidboot.init_rc in BoardConfig.mk): init reads this file and its imports
-# only. With the panel's experimental browser (EVERYWARE_BROWSER=true, everyware.mk above) a
+# only. With the panel's experimental browser (EVERYWARE_EXPERIMENTAL_BROWSER=true, everyware.mk above) a
 # root init of two lines takes its path: it imports the board's init and the browser's service.
-ifeq ($(EVERYWARE_BROWSER),true)
+ifeq ($(EVERYWARE_EXPERIMENTAL_BROWSER),true)
 PRODUCT_COPY_FILES += \
     device/cf-everyware/sdv_media_everyware_cf/init.sdv_media_everyware_cf.rc:$(TARGET_COPY_OUT_SYSTEM)/etc/init/hw/init.sdv_media_everyware_cf.board.rc \
     device/cf-everyware/sdv_media_everyware_cf/init.sdv_media_everyware_cf.browser.rc:$(TARGET_COPY_OUT_SYSTEM)/etc/init/hw/init.sdv_media_everyware_cf.rc

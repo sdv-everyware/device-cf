@@ -32,7 +32,7 @@ and for continuous builds. PLAN.md has the decisions and the alternatives.
 | Time | `vendor/sdv-everyware/third_party/chrony` | started at boot |
 | The house's services: weather, news, calendar, Wi-Fi, Matter, system, the dashboard bridge | `vendor/sdv-everyware/everyware/product/everyware.mk` | inherited; the domains of the Wi-Fi, Matter and System bundles in `sepolicy/` |
 | The smart home panel | `packages/services/display_safety/utils/smarthome-app` | the vendor APEX `com.everyware.smarthome`, started by its own init script, in HAR's domain |
-| The panel's other processes: camera, optional game (`EVERYWARE_GAME=true`), optional browser (`EVERYWARE_BROWSER=true`) | `camera-app`, `doom-app`, `everyware/product/everyware.mk` | started by init after the panel (`/vendor/etc/init/everyware`, `init.sdv_media_everyware_cf.browser.rc`), each in its own domain in `sepolicy/vendor/` |
+| The panel's other processes: camera, optional game (`EVERYWARE_GAME=true`), optional experimental browser (`EVERYWARE_EXPERIMENTAL_BROWSER=true`) | `camera-app`, `doom-app`, `everyware/product/everyware.mk` | started by init after the panel (`/vendor/etc/init/everyware`, `init.sdv_media_everyware_cf.browser.rc`), each in its own domain in `sepolicy/vendor/` |
 | Settings | SDV's `user_preferences` (sample APEX) | as on the RB3 |
 
 Root init: `androidboot.init_rc` names `/system/etc/init/hw/init.sdv_media_everyware_cf.rc`, and
@@ -154,7 +154,7 @@ Verified on `main` (host SwiftShader, `cvd`):
 | Bundles | weather, news, calendar, Wi-Fi, Matter, system, dashboard and `user_preferences` running, each in its SELinux domain |
 | Wi-Fi and DHCP | `setup_wifi` makes `wlan0`, the supplicant joins `VirtWifi`, `dhcpclient` gets a lease (or `CF_STATIC_WIFI=1` sets the address when a host firewall drops DHCP), dnsproxyd resolves, chronyd syncs, live weather and news arrive over HTTPS |
 | Panel | starts with the APEX's `--zone-plane`, honors `ro.vendor.everyware.zone_plane=false` (virtio-gpu has no `zpos`), renders at 1 FPS idle (the clock) |
-| Panel child processes | `camera-app` starts after the panel in its `everyware_camera` domain and connects to the panel's Wayland zones; `EVERYWARE_BROWSER=true` and `EVERYWARE_GAME=true` product and policy wiring matches `device-rb3` (off by default, not booted here) |
+| Panel child processes | `camera-app` starts after the panel in its `everyware_camera` domain and connects to the panel's Wayland zones; `EVERYWARE_EXPERIMENTAL_BROWSER=true` (the experimental browser) and `EVERYWARE_GAME=true` product and policy wiring matches `device-rb3` (off by default, not booted here) |
 | Touch | a click in the WebRTC page goes through crosvm's virtio multi-touch to the panel: tabs and sheets open |
 | Resources | the guest uses 1 of its 2 GB; on the host crosvm takes about a quarter of a core with an idle panel |
 | Enforcing (`CF_ENFORCE=true`) | boots, but the orchestrator never gets ready, most bundles fail to start (2 of 7 in the initial run), and the panel and mesh script are denied |
