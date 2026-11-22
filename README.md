@@ -30,8 +30,9 @@ and for continuous builds. PLAN.md has the decisions and the alternatives.
 | Device identity and service discovery for one device | Google's test DICE file, `vvmconfig.example`, the preprovisioned trust store image of instance1 | the mesh stays on the device: the agents' namespaces have loopback only (`ethernet/`), RPC on `lo` |
 | Network: Wi-Fi, DHCP, names | `virt_wifi` on Cuttlefish's Wi-Fi tap (Google's `setup_wifi`), `wpa_supplicant`, AOSP's `dhcpclient`, `vendor/sdv-everyware/dnsproxyd` | `net/net_bringup.sh` |
 | Time | `vendor/sdv-everyware/third_party/chrony` | started at boot |
-| The house's services: weather, news, Wi-Fi, Matter, system, the dashboard bridge | `vendor/sdv-everyware/everyware/product/everyware.mk` | inherited; the domains of the Wi-Fi, Matter and System bundles in `sepolicy/` |
+| The house's services: weather, news, calendar, Wi-Fi, Matter, system, the dashboard bridge | `vendor/sdv-everyware/everyware/product/everyware.mk` | inherited; the domains of the Wi-Fi, Matter and System bundles in `sepolicy/` |
 | The smart home panel | `packages/services/display_safety/utils/smarthome-app` | the vendor APEX `com.everyware.smarthome`, started by its own init script, in HAR's domain |
+| The panel's other processes: camera, optional game (`EVERYWARE_GAME=true`), optional browser (`EVERYWARE_BROWSER=true`) | `camera-app`, `doom-app`, `everyware/product/everyware.mk` | started by init after the panel (`/vendor/etc/init/everyware`, `init.sdv_media_everyware_cf.browser.rc`), each in its own domain in `sepolicy/vendor/` |
 | Settings | SDV's `user_preferences` (sample APEX) | as on the RB3 |
 
 Root init: `androidboot.init_rc` names `/system/etc/init/hw/init.sdv_media_everyware_cf.rc`, and
@@ -58,10 +59,18 @@ bridges and taps), and the user in the groups `kvm`, `cvdnetwork` and `render`.
 
 ```
 device/cf-everyware/sdv_media_everyware_cf/tools/run.sh start
-adb -s 0.0.0.0:6526 shell
+adb -s 127.0.0.1:6526 shell    # or 0.0.0.0:6526 on older cvd; see `cvd fleet`
 device/cf-everyware/sdv_media_everyware_cf/tools/run.sh screenshot panel.png
 device/cf-everyware/sdv_media_everyware_cf/tools/run.sh stop
 device/cf-everyware/sdv_media_everyware_cf/tools/run.sh rm      # before a start with new images
+```
+
+Between full image rebuilds, test a changed panel or service bundle directly on the running VM:
+
+```
+vendor/sdv-everyware/everyware/scripts/run-smarthome.sh --target cf all
+vendor/sdv-everyware/everyware/scripts/run-smarthome.sh --target cf stop
+vendor/sdv-everyware/everyware/scripts/deploy-bundle.sh --target cf all weather dashboard
 ```
 
 The instance is group `everyware`, instance 7 (`CF_INSTANCE`): other Cuttlefish instances on the
@@ -131,34 +140,26 @@ the device, as on the RB3.
 | SELinux mode | `androidboot.selinux` in the image | the launch flag |
 | Clock at boot | no RTC battery: chronyd restores the last time | the host's time |
 | Kernel modules | Linaro's: disk and display in the first stage, the rest in the background | Google's virtual-device modules, all in the first stage |
-| Not here | | the Qualcomm remote processors, Bluetooth, the audio HAL, the browser |
+| Not here | | the Qualcomm remote processors, Bluetooth, the audio HAL |
 
 ## State
 
-2026-11-14, first runs on a laptop with an AMD GPU, host SwiftShader, `cvd` 1.53:
+Verified on `main` (host SwiftShader, `cvd`):
 
 | Check | Result |
 |---|---|
-| Build | `m` passes (images and host tools); needed one fix in `vendor/sdv-everyware/third_party/rust` (chacha20 on Android x86-64) |
+| Build | `m` passes (images and host tools) |
 | Boot | `sys.boot_completed=1`, `ro.sdv.orchestrator.state.ready=true`, SELinux permissive, instance1, RPC on `lo` |
 | SDV agents | lifecycle, orchestration, service discovery, RPC, data tunnel, health, update manager, vpm, vsidl provider running |
-| Bundles | weather, news, Wi-Fi, Matter, system, dashboard and `user_preferences` running, each in its SELinux domain |
-| Wi-Fi | `setup_wifi` makes `wlan0`, the supplicant joins `VirtWifi`, the Wi-Fi bundle reports it (`WIFI_CONNECTED "VirtWifi" 4 bars`), the panel's Wi-Fi sheet lists it |
-| DHCP | no lease on this host: its firewall drops DHCP on `cvd-wbr` (see Network); with the lease set by hand, dnsproxyd resolves, chronyd syncs (stratum 1), weather and news arrive over HTTPS |
-| Panel | with harry's fix for a plane without zpos (below) it starts with the APEX's `--zone-plane`; `ro.vendor.everyware.zone_plane=false` turns zone planes off; idle, it draws 1 frame a second (the clock) |
-| Touch | a click in the WebRTC page goes through crosvm's virtio multi-touch to the panel: tabs and the Wi-Fi sheet open |
-| Resources | the guest uses 1 of its 2 GB; on the host crosvm takes about a quarter of a core with an idle panel (it took ~5 cores while the panel redrew 30 times a second without the property) |
-| Enforcing (`CF_ENFORCE=true`) | boots, but the orchestrator never gets ready, 2 of 7 bundles start, the panel and the mesh script are denied |
+| Bundles | weather, news, calendar, Wi-Fi, Matter, system, dashboard and `user_preferences` running, each in its SELinux domain |
+| Wi-Fi and DHCP | `setup_wifi` makes `wlan0`, the supplicant joins `VirtWifi`, `dhcpclient` gets a lease (or `CF_STATIC_WIFI=1` sets the address when a host firewall drops DHCP), dnsproxyd resolves, chronyd syncs, live weather and news arrive over HTTPS |
+| Panel | starts with the APEX's `--zone-plane`, honors `ro.vendor.everyware.zone_plane=false` (virtio-gpu has no `zpos`), renders at 1 FPS idle (the clock) |
+| Panel child processes | `camera-app` starts after the panel in its `everyware_camera` domain and connects to the panel's Wayland zones; `EVERYWARE_BROWSER=true` and `EVERYWARE_GAME=true` product and policy wiring matches `device-rb3` (off by default, not booted here) |
+| Touch | a click in the WebRTC page goes through crosvm's virtio multi-touch to the panel: tabs and sheets open |
+| Resources | the guest uses 1 of its 2 GB; on the host crosvm takes about a quarter of a core with an idle panel |
+| Enforcing (`CF_ENFORCE=true`) | boots, but the orchestrator never gets ready, most bundles fail to start (2 of 7 in the initial run), and the panel and mesh script are denied |
 
-What does not work yet, and where the change belongs:
+What is still open:
 
-1. The panel's init script passes `--zone-plane`; harry then set the primary plane's `zpos`
-   (`packages/services/display_safety/framework/graphics/har-gl-context/src/direct_rendering/kms.rs`,
-   `plane_props["zpos"]`), and virtio-gpu's planes have no `zpos`: the lookup panicked and init
-   restarted the panel in a loop. Fixed on branches, not landed yet: harry sets `zpos` only when
-   the plane has it (super-harry `feature/zpos-optional`), and the panel reads
-   `ro.vendor.everyware.zone_plane` (smarthome-app `feature/board-zone-plane`). Until they land,
-   an image built from main still has the crash.
-2. DHCP on this host: a firewall setting of the host, not of the image.
-3. Enforcing: the policy of the panel, of the bundles' name lookups and of the mesh script is
-   not written yet (the same holds for the RB3, which runs permissive).
+1. Host firewall DHCP: on hosts whose firewall drops DHCP on `cvd-wbr`, allow `dhcp` on the bridge zone or start with `CF_STATIC_WIFI=1`.
+2. Enforcing: the policy of the panel, of the bundles' name lookups and of the mesh script is not written yet (the same holds for the RB3, which runs permissive).

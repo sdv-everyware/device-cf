@@ -99,10 +99,6 @@ PRODUCT_PACKAGES += wlan_static
 PRODUCT_COPY_FILES += \
     device/cf-everyware/sdv_media_everyware_cf/net/net_bringup.sh:$(TARGET_COPY_OUT_VENDOR)/bin/net_bringup.sh
 
-# the root init (androidboot.init_rc in BoardConfig.mk): init reads this file and its imports only
-PRODUCT_COPY_FILES += \
-    device/cf-everyware/sdv_media_everyware_cf/init.sdv_media_everyware_cf.rc:$(TARGET_COPY_OUT_SYSTEM)/etc/init/hw/init.sdv_media_everyware_cf.rc
-
 # SDV on one device: the sample policies, the test identity, service discovery on loopback
 include device/google/sdv/sdv_core_base/sepolicy/samples/device_sepolicy.mk
 
@@ -124,10 +120,21 @@ $(call inherit-product, vendor/sdv-everyware/dnsproxyd/dnsproxyd.mk)
 # the clock over NTP, restored from the last run at boot
 $(call inherit-product, vendor/sdv-everyware/third_party/chrony/chrony.mk)
 
-# the service bundles of the house (weather, news, Wi-Fi, Matter, system, the dashboard bridge),
-# one APEX each, and the contexts that put them into their SELinux domains. The panel's browser
-# stays off (EVERYWARE_EXPERIMENTAL_BROWSER): this product has no policy for it.
+# the service bundles of the house (weather, news, calendar, Wi-Fi, Matter, system, the dashboard
+# bridge), one APEX each, and the contexts that put them into their SELinux domains
 $(call inherit-product, vendor/sdv-everyware/everyware/product/everyware.mk)
+
+# the root init (androidboot.init_rc in BoardConfig.mk): init reads this file and its imports
+# only. With the panel's experimental browser (EVERYWARE_BROWSER=true, everyware.mk above) a
+# root init of two lines takes its path: it imports the board's init and the browser's service.
+ifeq ($(EVERYWARE_BROWSER),true)
+PRODUCT_COPY_FILES += \
+    device/cf-everyware/sdv_media_everyware_cf/init.sdv_media_everyware_cf.rc:$(TARGET_COPY_OUT_SYSTEM)/etc/init/hw/init.sdv_media_everyware_cf.board.rc \
+    device/cf-everyware/sdv_media_everyware_cf/init.sdv_media_everyware_cf.browser.rc:$(TARGET_COPY_OUT_SYSTEM)/etc/init/hw/init.sdv_media_everyware_cf.rc
+else
+PRODUCT_COPY_FILES += \
+    device/cf-everyware/sdv_media_everyware_cf/init.sdv_media_everyware_cf.rc:$(TARGET_COPY_OUT_SYSTEM)/etc/init/hw/init.sdv_media_everyware_cf.rc
+endif
 
 # virtio-gpu has no plane a zone can go under (no zpos): the panel's init script passes
 # --zone-plane for every board, this turns it off, and the dashboard draws the zones, only on a
@@ -151,6 +158,19 @@ PRODUCT_PACKAGES += com.android.sdv.sample.user_preferences
 PRODUCT_PACKAGES += com.everyware.smarthome
 SYSTEM_EXT_PUBLIC_SEPOLICY_DIRS += packages/services/display_safety/service/product/har_sdv_service_bundle_apex/lifecycle/sepolicy/public
 SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += packages/services/display_safety/service/product/har_sdv_service_bundle_apex/lifecycle/sepolicy
+
+# the panel's camera (packages/services/display_safety/utils/camera-app): camera_app and its
+# service, started when the panel runs (init.sdv_media_everyware_cf.rc imports
+# /vendor/etc/init/everyware), in its domain everyware_camera (sepolicy/vendor). A checkout
+# without the camera-app repository has no camera.
+$(call inherit-product-if-exists, packages/services/display_safety/utils/camera-app/product/camera.mk)
+
+# the panel's game (DOOM, packages/services/display_safety/utils/doom-app): experimental and off
+# unless EVERYWARE_GAME=true; then doom_app, Freedoom's WAD (fetched before the build), its
+# service (started when the panel runs, in its domain everyware_game) and the property by which
+# the panel shows its game button. A checkout without the doom-app repository has no game,
+# whatever the flag says.
+$(call inherit-product-if-exists, packages/services/display_safety/utils/doom-app/product/doom.mk)
 
 # adb remount on a userdebug build, as on the RB3: the core base of this tree does not ship the
 # tools of the overlay on /data yet

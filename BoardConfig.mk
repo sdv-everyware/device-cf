@@ -23,9 +23,9 @@ SDV_RPC_INTERFACE := lo
 
 include device/google/sdv/sdv_media_cf/BoardConfig.mk
 
-# The browser (experimental, EVERYWARE_EXPERIMENTAL_BROWSER) runs from a Debian root in /data,
+# The browser (experimental, EVERYWARE_BROWSER) runs from a Debian root in /data,
 # about 1.5 GB with Cog (everyware's scripts/browser-root.sh); SDV media gives /data 512 MiB.
-ifeq ($(EVERYWARE_EXPERIMENTAL_BROWSER),true)
+ifeq ($(EVERYWARE_BROWSER),true)
 BOARD_USERDATAIMAGE_PARTITION_SIZE := 4294967296 # 4 GiB
 endif
 
