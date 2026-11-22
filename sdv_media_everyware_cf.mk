@@ -161,8 +161,9 @@ SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += packages/services/display_safety/service/pro
 
 # the panel's camera (packages/services/display_safety/utils/camera-app): camera_app and its
 # service, started when the panel runs (init.sdv_media_everyware_cf.rc imports
-# /vendor/etc/init/everyware), in its domain everyware_camera (sepolicy/vendor). A checkout
-# without the camera-app repository has no camera.
+# /vendor/etc/init/everyware), in its domain everyware_camera (sepolicy/vendor). The emulator has
+# no camera, so the tile shows the app's clip. A checkout without the camera-app repository has
+# no camera.
 $(call inherit-product-if-exists, packages/services/display_safety/utils/camera-app/product/camera.mk)
 
 # the panel's game (DOOM, packages/services/display_safety/utils/doom-app): experimental and off
